@@ -12,11 +12,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "users")
+@DynamicInsert
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,6 +49,7 @@ public class User {
     private String cvText;
 
     @Column(length = 50)
+    @ColumnDefault("'Europe/Warsaw'")
     private String timezone;
 
     @CreationTimestamp
