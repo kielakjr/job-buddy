@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,26 +40,25 @@ class UserServiceTest {
         when(userRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getById(id))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining(id.toString());
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(id.toString());
     }
 
     @Test
     void upsertFromOAuth_throws_whenEmailMissing() {
         var profile = new OAuthProfile("google", "g-1", null, "Name", null);
 
-        assertThatThrownBy(() -> userService.upsertFromOAuth(profile))
-            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> userService.upsertFromOAuth(profile)).isInstanceOf(IllegalArgumentException.class);
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void upsertFromOAuth_matchesByGoogleId_andUpdatesProfile() {
         var existing = User.builder()
-            .id(UUID.randomUUID())
-            .email("old@x.com")
-            .googleId("g-1")
-            .build();
+                .id(UUID.randomUUID())
+                .email("old@x.com")
+                .googleId("g-1")
+                .build();
         when(userRepository.findByGoogleId("g-1")).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -73,10 +73,7 @@ class UserServiceTest {
 
     @Test
     void upsertFromOAuth_fallsBackToEmail_whenProviderIdUnknown() {
-        var existing = User.builder()
-            .id(UUID.randomUUID())
-            .email("a@b.com")
-            .build();
+        var existing = User.builder().id(UUID.randomUUID()).email("a@b.com").build();
         when(userRepository.findByGoogleId("g-2")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("a@b.com")).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));

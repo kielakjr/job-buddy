@@ -1,7 +1,8 @@
 package com.kielakjr.job_buddy.gmail;
 
-import com.kielakjr.job_buddy.application.Application;
-import com.kielakjr.job_buddy.user.User;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,20 +12,22 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.OffsetDateTime;
-import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import com.kielakjr.job_buddy.application.Application;
+import com.kielakjr.job_buddy.user.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(
-    name = "gmail_processed_messages",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "gmail_msg_id"})
-)
+        name = "gmail_processed_messages",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "gmail_msg_id"}))
 @Getter
 @Setter
 @NoArgsConstructor

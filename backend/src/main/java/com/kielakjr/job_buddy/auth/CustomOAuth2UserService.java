@@ -1,12 +1,9 @@
 package com.kielakjr.job_buddy.auth;
 
-import com.kielakjr.job_buddy.user.OAuthProfile;
-import com.kielakjr.job_buddy.user.User;
-import com.kielakjr.job_buddy.user.UserService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -15,6 +12,12 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.stereotype.Service;
+
+import com.kielakjr.job_buddy.user.OAuthProfile;
+import com.kielakjr.job_buddy.user.User;
+import com.kielakjr.job_buddy.user.UserService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -41,28 +44,15 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         enriched.put(PRINCIPAL_USER_ID_ATTR, user.getId().toString());
 
         return new DefaultOAuth2User(
-            Collections.singleton(new OAuth2UserAuthority(enriched)),
-            enriched,
-            PRINCIPAL_USER_ID_ATTR
-        );
+                Collections.singleton(new OAuth2UserAuthority(enriched)), enriched, PRINCIPAL_USER_ID_ATTR);
     }
 
     private static OAuthProfile toProfile(String provider, Map<String, Object> a) {
         return switch (provider) {
-            case "google", "linkedin" -> new OAuthProfile(
-                provider,
-                str(a.get("sub")),
-                str(a.get("email")),
-                str(a.get("name")),
-                str(a.get("picture"))
-            );
-            default -> new OAuthProfile(
-                provider,
-                str(a.get("sub")),
-                str(a.get("email")),
-                str(a.get("name")),
-                null
-            );
+            case "google", "linkedin" ->
+                new OAuthProfile(
+                        provider, str(a.get("sub")), str(a.get("email")), str(a.get("name")), str(a.get("picture")));
+            default -> new OAuthProfile(provider, str(a.get("sub")), str(a.get("email")), str(a.get("name")), null);
         };
     }
 

@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class JobBuddyApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(JobBuddyApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(JobBuddyApplication.class, args);
+    }
 }

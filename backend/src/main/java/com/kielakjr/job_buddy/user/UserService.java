@@ -1,9 +1,11 @@
 package com.kielakjr.job_buddy.user;
 
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -13,8 +15,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User getById(UUID id) {
-        return userRepository.findById(id)
-            .orElseThrow(() -> new IllegalStateException("User not found: " + id));
+        return userRepository.findById(id).orElseThrow(() -> new IllegalStateException("User not found: " + id));
     }
 
     @Transactional
@@ -23,14 +24,18 @@ public class UserService {
             throw new IllegalArgumentException("OAuth profile missing email");
         }
 
-        var existing = switch (profile.provider()) {
-            case "google" -> userRepository.findByGoogleId(profile.providerId()).orElse(null);
-            case "linkedin" -> userRepository.findByLinkedinId(profile.providerId()).orElse(null);
-            default -> null;
-        };
+        var existing =
+                switch (profile.provider()) {
+                    case "google" ->
+                        userRepository.findByGoogleId(profile.providerId()).orElse(null);
+                    case "linkedin" ->
+                        userRepository.findByLinkedinId(profile.providerId()).orElse(null);
+                    default -> null;
+                };
         if (existing == null) {
-            existing = userRepository.findByEmail(profile.email())
-                .orElseGet(() -> User.builder().email(profile.email()).build());
+            existing = userRepository
+                    .findByEmail(profile.email())
+                    .orElseGet(() -> User.builder().email(profile.email()).build());
         }
 
         existing.setEmail(profile.email());
@@ -39,7 +44,9 @@ public class UserService {
         switch (profile.provider()) {
             case "google" -> existing.setGoogleId(profile.providerId());
             case "linkedin" -> existing.setLinkedinId(profile.providerId());
-            default -> { /* unknown provider — no id linkage */ }
+            default -> {
+                /* unknown provider — no id linkage */
+            }
         }
 
         return userRepository.save(existing);
