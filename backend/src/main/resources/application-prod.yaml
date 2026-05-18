@@ -1,0 +1,30 @@
+# Prod profile — every secret comes from the environment.
+# Startup fails fast if DB_URL / DB_USERNAME / DB_PASSWORD are missing.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    show-sql: false
+
+  # Override the dev placeholders — fail fast if OAuth env is missing in prod.
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+          linkedin:
+            client-id: ${LINKEDIN_CLIENT_ID}
+            client-secret: ${LINKEDIN_CLIENT_SECRET}
+
+logging:
+  level:
+    root: INFO
+    com.kielakjr.job_buddy: INFO
