@@ -56,7 +56,8 @@ class ApplicationServiceTest {
                 25000,
                 "PLN",
                 LocalDate.of(2026, 5, 1),
-                "looks good");
+                "looks good",
+                null);
     }
 
     private Application existing(UUID id, ApplicationStatus status) {
@@ -148,7 +149,7 @@ class ApplicationServiceTest {
             when(applicationRepository.save(any(Application.class))).thenAnswer(inv -> inv.getArgument(0));
 
             var req = new UpdateApplicationRequest(
-                    "NewCo", null, "Remote", null, null, null, null, null, null, null, "notes2");
+                    "NewCo", null, "Remote", null, null, null, null, null, null, null, "notes2", null);
             var resp = service.update(user, id, req);
 
             assertThat(resp.company()).isEqualTo("NewCo");
@@ -166,7 +167,8 @@ class ApplicationServiceTest {
             when(applicationRepository.findByIdAndUser_Id(id, user.getId())).thenReturn(Optional.of(app));
             when(applicationRepository.save(any(Application.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            var req = new UpdateApplicationRequest(null, null, null, null, null, null, null, null, null, null, null);
+            var req = new UpdateApplicationRequest(
+                    null, null, null, null, null, null, null, null, null, null, null, null);
             var resp = service.update(user, id, req);
 
             assertThat(resp.company()).isEqualTo("ACME");
@@ -182,7 +184,7 @@ class ApplicationServiceTest {
                             user,
                             id,
                             new UpdateApplicationRequest(
-                                    null, null, null, null, null, null, null, null, null, null, null)))
+                                    null, null, null, null, null, null, null, null, null, null, null, null)))
                     .isInstanceOf(ApplicationNotFoundException.class);
         }
     }

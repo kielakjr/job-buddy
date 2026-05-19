@@ -20,6 +20,7 @@ public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
     private final ApplicationEventRepository eventRepository;
+    private final com.kielakjr.job_buddy.tag.TagRepository tagRepository;
 
     @Transactional
     public ApplicationResponse create(User user, CreateApplicationRequest req) {
@@ -37,6 +38,7 @@ public class ApplicationService {
                 .salaryCurrency(req.salaryCurrency())
                 .appliedAt(req.appliedAt())
                 .notes(req.notes())
+                .tags(resolveOwnedTags(user, req.tagIds()))
                 .build();
         return ApplicationResponse.from(applicationRepository.save(app));
     }
@@ -67,6 +69,15 @@ public class ApplicationService {
         if (req.salaryCurrency() != null) app.setSalaryCurrency(req.salaryCurrency());
         if (req.appliedAt() != null) app.setAppliedAt(req.appliedAt());
         if (req.notes() != null) app.setNotes(req.notes());
+        if (req.tagIds() != null) {
+            if (req.tagIds().isEmpty()) {
+                app.getTags().clear();
+            } else {
+                var resolved = resolveOwnedTags(user, req.tagIds());
+                app.getTags().clear();
+                app.getTags().addAll(resolved);
+            }
+        }
         return ApplicationResponse.from(applicationRepository.save(app));
     }
 
@@ -95,9 +106,43 @@ public class ApplicationService {
         }
     }
 
+    @Transactional
+    public void attachTag(User user, UUID appId, UUID tagId) {
+        var app = loadOwned(user, appId);
+        var tag = tagRepository
+                .findByIdAndUser_Id(tagId, user.getId())
+                .orElseThrow(() -> new com.kielakjr.job_buddy.tag.TagNotFoundException(tagId));
+        app.getTags().add(tag);
+        applicationRepository.save(app);
+    }
+
+    @Transactional
+    public void detachTag(User user, UUID appId, UUID tagId) {
+        var app = loadOwned(user, appId);
+        app.getTags().removeIf(t -> t.getId().equals(tagId));
+        applicationRepository.save(app);
+    }
+
     private Application loadOwned(User user, UUID id) {
         return applicationRepository
                 .findByIdAndUser_Id(id, user.getId())
                 .orElseThrow(() -> new ApplicationNotFoundException(id));
+    }
+
+    private java.util.Set<com.kielakjr.job_buddy.tag.Tag> resolveOwnedTags(
+            User user, java.util.Set<java.util.UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new java.util.HashSet<>();
+        }
+        var found = tagRepository.findAllByIdInAndUser_Id(java.util.List.copyOf(ids), user.getId());
+        if (found.size() != ids.size()) {
+            var foundIds = found.stream()
+                    .map(com.kielakjr.job_buddy.tag.Tag::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            var missing = new java.util.HashSet<>(ids);
+            missing.removeAll(foundIds);
+            throw new InvalidTagIdsException(missing);
+        }
+        return new java.util.HashSet<>(found);
     }
 }

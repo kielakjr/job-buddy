@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kielakjr.job_buddy.TestcontainersConfiguration;
 import com.kielakjr.job_buddy.auth.CustomOAuth2UserService;
+import com.kielakjr.job_buddy.tag.Tag;
+import com.kielakjr.job_buddy.tag.TagRepository;
 import com.kielakjr.job_buddy.user.User;
 import com.kielakjr.job_buddy.user.UserRepository;
 
@@ -46,6 +48,9 @@ class ApplicationControllerIT {
 
     @Autowired
     ApplicationEventRepository eventRepository;
+
+    @Autowired
+    TagRepository tagRepository;
 
     User alice;
     User bob;
@@ -205,6 +210,145 @@ class ApplicationControllerIT {
 
             mvc.perform(get("/api/applications/{id}", alicesApp.getId()).with(as(alice)))
                     .andExpect(status().isOk());
+        }
+    }
+
+    @Nested
+    class UpdateWithTags {
+
+        @Test
+        void omittedTagIdsLeavesTagsUnchanged() throws Exception {
+            var tag = tagRepository.save(Tag.builder().user(alice).name("x").build());
+            var app = applicationRepository.save(Application.builder()
+                    .user(alice)
+                    .company("c")
+                    .position("p")
+                    .status(ApplicationStatus.DRAFT)
+                    .tags(new java.util.HashSet<>(java.util.Set.of(tag)))
+                    .build());
+
+            mvc.perform(patch("/api/applications/{id}", app.getId())
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{ \"company\":\"newco\" }"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tags.length()").value(1))
+                    .andExpect(jsonPath("$.tags[0].name").value("x"));
+        }
+
+        @Test
+        void emptyTagIdsClearsAll() throws Exception {
+            var tag = tagRepository.save(Tag.builder().user(alice).name("x").build());
+            var app = applicationRepository.save(Application.builder()
+                    .user(alice)
+                    .company("c")
+                    .position("p")
+                    .status(ApplicationStatus.DRAFT)
+                    .tags(new java.util.HashSet<>(java.util.Set.of(tag)))
+                    .build());
+
+            mvc.perform(patch("/api/applications/{id}", app.getId())
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{ \"tagIds\":[] }"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tags.length()").value(0));
+        }
+
+        @Test
+        void nonEmptyTagIdsReplacesFullSet() throws Exception {
+            var t1 = tagRepository.save(Tag.builder().user(alice).name("old").build());
+            var t2 = tagRepository.save(Tag.builder().user(alice).name("new").build());
+            var app = applicationRepository.save(Application.builder()
+                    .user(alice)
+                    .company("c")
+                    .position("p")
+                    .status(ApplicationStatus.DRAFT)
+                    .tags(new java.util.HashSet<>(java.util.Set.of(t1)))
+                    .build());
+
+            mvc.perform(patch("/api/applications/{id}", app.getId())
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{ \"tagIds\":[\"%s\"] }".formatted(t2.getId())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tags.length()").value(1))
+                    .andExpect(jsonPath("$.tags[0].name").value("new"));
+        }
+
+        @Test
+        void unknownTagIdReturns400() throws Exception {
+            var app = applicationRepository.save(Application.builder()
+                    .user(alice)
+                    .company("c")
+                    .position("p")
+                    .status(ApplicationStatus.DRAFT)
+                    .build());
+
+            mvc.perform(patch("/api/applications/{id}", app.getId())
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{ \"tagIds\":[\"%s\"] }".formatted(java.util.UUID.randomUUID())))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    class CreateWithTags {
+
+        @Test
+        void createAttachesTagsByIds() throws Exception {
+            var t1 = tagRepository.save(Tag.builder().user(alice).name("urgent").build());
+            var t2 =
+                    tagRepository.save(Tag.builder().user(alice).name("backend").build());
+
+            var body =
+                    """
+                    { "company":"ACME","position":"Eng","tagIds":["%s","%s"] }
+                    """
+                            .formatted(t1.getId(), t2.getId());
+
+            mvc.perform(post("/api/applications")
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.tags.length()").value(2))
+                    .andExpect(jsonPath("$.tags[0].name").value("backend"))
+                    .andExpect(jsonPath("$.tags[1].name").value("urgent"));
+        }
+
+        @Test
+        void returns400WhenTagIdUnknown() throws Exception {
+            var body =
+                    """
+                    { "company":"ACME","position":"Eng","tagIds":["%s"] }
+                    """
+                            .formatted(java.util.UUID.randomUUID());
+
+            mvc.perform(post("/api/applications")
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void returns400WhenTagBelongsToOtherUser() throws Exception {
+            var bobsTag =
+                    tagRepository.save(Tag.builder().user(bob).name("bobs").build());
+
+            var body =
+                    """
+                    { "company":"ACME","position":"Eng","tagIds":["%s"] }
+                    """
+                            .formatted(bobsTag.getId());
+
+            mvc.perform(post("/api/applications")
+                            .with(as(alice))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
         }
     }
 }

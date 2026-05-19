@@ -1,6 +1,8 @@
 package com.kielakjr.job_buddy.application.dto;
 
 import java.time.LocalDate;
+import java.util.Set;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,4 +18,5 @@ public record CreateApplicationRequest(
         Integer salaryMax,
         @Size(min = 3, max = 3) String salaryCurrency,
         LocalDate appliedAt,
-        String notes) {}
+        String notes,
+        Set<UUID> tagIds) {}
